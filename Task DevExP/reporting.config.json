@@ -1,0 +1,15 @@
+{
+    "DataBindingMode": "Expressions",
+    "SqlConnectionStrings":{
+        "Northwind_Connection": "XpoProvider=MSSqlServer;...."
+    },
+    "JsonConnectionStrings":{
+        "Nwind JSON Data": "Uri=nwind.json",
+        "Dummy 100 Users": "Uri=https://dummyjson.com/users/"
+    },
+    "ReportsDirectory" : "PredefinedReports",
+    "ReportUrlsMap":{
+        "Report1": "Report1.repx",
+        "newReport": "newReport.repx"
+    }
+}

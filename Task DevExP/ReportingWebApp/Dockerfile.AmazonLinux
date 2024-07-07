@@ -1,0 +1,39 @@
+#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+
+FROM amazonlinux AS base
+RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+RUN yum install -y aspnetcore-runtime-7.0
+
+#Install dependencies
+RUN yum install -y glibc-devel libicu fontconfig
+
+WORKDIR /app
+ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
+EXPOSE 443
+
+FROM node:18 as build-frontend
+WORKDIR /modules
+COPY ["package.json", "./"]
+RUN npm install
+
+FROM amazonlinux AS build
+RUN rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
+RUN yum install -y dotnet-sdk-7.0
+
+WORKDIR /src
+RUN --mount=type=secret,id=dxnuget,required=true dotnet nuget add source $(cat /run/secrets/dxnuget) -n devexpress-nuget
+COPY ["ReportingWebApp.csproj", "ReportingWebApp/"]
+RUN dotnet restore "ReportingWebApp/ReportingWebApp.csproj"
+COPY ["./", "ReportingWebApp/"]
+WORKDIR "/src/ReportingWebApp"
+COPY --from=build-frontend ./modules .
+RUN dotnet build "ReportingWebApp.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "ReportingWebApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "ReportingWebApp.dll"]
